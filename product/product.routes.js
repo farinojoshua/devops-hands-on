@@ -18,20 +18,17 @@ function parseBody(req) {
 }
 
 /**
- * Send JSON response helper
+ * Standard response helpers
+ * All responses follow: { success, message, data }
  */
-function sendJson(res, statusCode, data) {
+function sendSuccess(res, statusCode, message, data = null) {
     res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(data));
+    res.end(JSON.stringify({ success: true, message, data }));
 }
 
-/**
- * Extract product ID from URL path like /products/123
- */
-function extractId(url) {
-    const parts = url.split('/').filter(Boolean);
-    // expects ["products", "123"]
-    return parts.length >= 2 ? parseInt(parts[1], 10) : NaN;
+function sendError(res, statusCode, message) {
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: false, message, data: null }));
 }
 
 /**
@@ -44,7 +41,7 @@ async function handleProductRoutes(req, res) {
     // GET /products — list all
     if (url === '/products' && req.method === 'GET') {
         const products = productService.getAll();
-        sendJson(res, 200, products);
+        sendSuccess(res, 200, 'Products retrieved successfully', products);
         return true;
     }
 
@@ -54,12 +51,12 @@ async function handleProductRoutes(req, res) {
             const data = await parseBody(req);
             const result = productService.create(data);
             if (result.error) {
-                sendJson(res, 400, result);
+                sendError(res, 400, result.error);
             } else {
-                sendJson(res, 201, result);
+                sendSuccess(res, 201, 'Product created successfully', result);
             }
         } catch {
-            sendJson(res, 400, { error: 'Invalid JSON body' });
+            sendError(res, 400, 'Invalid JSON body');
         }
         return true;
     }
@@ -74,9 +71,9 @@ async function handleProductRoutes(req, res) {
     if (req.method === 'GET') {
         const product = productService.getById(id);
         if (!product) {
-            sendJson(res, 404, { error: 'Product not found' });
+            sendError(res, 404, 'Product not found');
         } else {
-            sendJson(res, 200, product);
+            sendSuccess(res, 200, 'Product retrieved successfully', product);
         }
         return true;
     }
@@ -88,12 +85,12 @@ async function handleProductRoutes(req, res) {
             const result = productService.update(id, data);
             if (result.error) {
                 const status = result.error === 'Product not found' ? 404 : 400;
-                sendJson(res, status, result);
+                sendError(res, status, result.error);
             } else {
-                sendJson(res, 200, result);
+                sendSuccess(res, 200, 'Product updated successfully', result);
             }
         } catch {
-            sendJson(res, 400, { error: 'Invalid JSON body' });
+            sendError(res, 400, 'Invalid JSON body');
         }
         return true;
     }
@@ -102,9 +99,9 @@ async function handleProductRoutes(req, res) {
     if (req.method === 'DELETE') {
         const result = productService.delete(id);
         if (result.error) {
-            sendJson(res, 404, result);
+            sendError(res, 404, result.error);
         } else {
-            sendJson(res, 200, result);
+            sendSuccess(res, 200, 'Product deleted successfully');
         }
         return true;
     }
@@ -113,3 +110,4 @@ async function handleProductRoutes(req, res) {
 }
 
 module.exports = { handleProductRoutes };
+
