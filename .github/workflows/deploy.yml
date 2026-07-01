@@ -1,0 +1,25 @@
+name: Deploy Pipeline
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      API_KEY: ${{ secrets.API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show masked secrets
+        run: |
+          echo "DB_PASSWORD is set: ${{ secrets.DB_PASSWORD != '' }}"
+          echo "API_KEY is set: ${{ secrets.API_KEY != '' }}"
+          echo "Attempting to print secret: $DB_PASSWORD"
+          # GitHub akan otomatis mask secret di log → tampil ***
+
+      - name: Simulate deployment
+        run: |
+          echo "Deploying with database connection..."
+          echo "Deploy complete!"
